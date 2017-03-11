@@ -60,6 +60,18 @@ class Tool
         return !$dt ? null : $dt->format($toFormat);
     }
 
+
+    /*!
+     * @public
+     * @static
+     * @param float $time
+     * @return  string sqldatetime format
+     */
+    public static function dateFromTime($time=null)
+    {
+        return date(self::TIMESTAMP_SQLDATETIME, $time==null ? microtime(true) : $time);
+    }
+
     /*!
      * concatenate various items in $list separate with specifyed separator $sep
      *
@@ -78,4 +90,21 @@ class Tool
         return $value;
     }
 
+    /*!
+     * desc
+     *
+     * @method      compact
+     * @public
+     * @param       [str]   $source
+     * @param       [str]   $fields
+     * @return      str
+     */
+    public static function compact($source, $fields)
+    {
+        $data = array();
+        foreach ($fields as $field) {
+            if (isset($source[$field])) $data[$field] = $source[$field];
+        }
+        return $data;
+    }
 }
