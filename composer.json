@@ -1,0 +1,13 @@
+{
+    "name": "meta-tech/PwsAuth",
+    "license": "MIT",
+    "type": "library",
+    "autoload": {
+        "psr-4": {
+            "": "src/"
+        }
+    },
+    "require": {
+        "symfony/yaml": "^3.2"
+    }
+}
