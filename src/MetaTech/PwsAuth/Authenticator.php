@@ -1,0 +1,257 @@
+<?php
+/*
+ * This file is part of the PwsAuth package.
+ *
+ * (c) meta-tech.academy
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+namespace MetaTech\PwsAuth;
+
+use MetaTech\Util\Tool;
+use MetaTech\PwsAuth\Token;
+use MetaTech\PwsAuth\AuthenticateException;
+
+/*!
+ * a simple class to authenticate access throught webservices using Pluie\Auth\Token
+ * and PwsAuth Protocol
+ * 
+ * @package     MetaTech\PwsAuth
+ * @class       Authenticator
+ * @author      a-Sansara
+ * @date        2016-05-02 13:08:01 CET
+ * 
+ */
+class Authenticator
+{
+    /*! @constant DATE_FORMAT */
+    const DATE_FORMAT  = 'smHdiy';
+    /*! @constant DATE_LENGTH */
+    const DATE_LENGTH  = 12;
+    /*! @constant DATE_LENGTH */
+    const DEFAULT_ALGO = 'sha256';
+
+    /*! @protected @var [assoc] $config */
+    protected $config;
+
+    /*!
+     * @constructor
+     * @public
+     */
+    public function __construct($config)
+    {
+        $this->config = $config;
+    }
+
+    /*!
+     * check if specified Token is a valid token
+     * 
+     * @method      isValid
+     * @public
+     * @param       Pluie\Auth\Token     $token
+     * @return      bool
+     */
+    public function isValid(Token $token)
+    {
+        return $token->getType() == $this->config['type'] && $this->checkObfuscatePart($token);
+    }
+
+    /*!
+     * generate a unique signature at given time for specifyed user
+     * 
+     * @method      sign
+     * @public
+     * @param       str     $dtime  given time in sqldatetime format
+     * @param       str     $login  the user login
+     * @param       str     $key    the user key
+     * @return      str
+     */
+    public function sign($dtime, $login, $key, $length=null)
+    {
+        $str = Tool::concat($this->config['hash']['sep'], [$dtime, $login, $this->getUserSalt($login), $key]);
+        return substr(hash($this->config['hash']['algo'], $str), is_null($length) ? - $this->config['hash']['length'] : - $length);
+    }
+
+    /*!
+     * generate the salt for a specific user
+     * 
+     * @method      getUserSalt
+     * @public
+     * @param       str     $login   the user login
+     * @return      str
+     */
+    public function getUserSalt($login)
+    {
+        return substr(
+            hash(self::DEFAULT_ALGO, $login . $this->config['salt']['common']), 
+            $this->config['salt']['user.index'], 
+            $this->config['salt']['user.length']
+        );
+    }
+
+    /*!
+     * generate noise to obfuscate token
+     * 
+     * @method      obfuscate
+     * @orivate
+     * @param       str     $data
+     * @return      str
+     */
+    private function obfuscate($data, $date)
+    {
+        return substr(
+            hash(self::DEFAULT_ALGO, $date . $data . $this->config['salt']['common']), 
+            - $this->config['hash']['session.index']
+        );
+    }
+
+    /*!
+     * check valid noise obfuscation
+     * 
+     * @method      checkObfuscatePart
+     * @public
+     * @param       Pluie\Auth\Token    $token
+     * @return      bool
+     */
+    public function checkObfuscatePart(Token $token)
+    {
+        $tokenValue = $token->getValue();
+        return substr($tokenValue, 0, $this->config['hash']['session.index']) == $this->obfuscate($this->deobfuscate($tokenValue), $token->getDate());
+    }
+
+    /*!
+     * deoffuscate token
+     * 
+     * @method      deobfuscate
+     * @orivate
+     * @param       str     $data
+     * @return      str
+     */
+    private function deobfuscate($data)
+    {
+        return substr($data, $this->config['hash']['session.index']);
+    }
+
+    /*!
+     * @method      getSessionId
+     * @orivate
+     * @param       Pluie\Auth\Token    $token
+     * @return      str
+     */
+    public function getSessionId(Token $token)
+    {
+        return $this->deobfuscate($token->getValue());
+    }
+
+    /*!
+     * check validity of Token
+     * 
+     * @mehtod      check
+     * @public
+     * @param       Pluie\Auth\Token     $token
+     * @param       str                  $login
+     * @return      bool
+     */
+    public function check(Token $token, $login)
+    {
+        return !is_null($token) && $this->deobfuscate($token->getValue()) == $this->sign($token->getDate(), $login, $token->getIdent());
+    }
+
+    /*!
+     * @method      generateNoise
+     * @public
+     * @param       str     $data
+     * @return      str
+     */
+    public function generateNoise($data)
+    {
+        return substr(hash(self::DEFAULT_ALGO, str_shuffle($data)), - $this->config['hash']['noise.length']); 
+    }
+
+    /*!
+     * @method      generateToken
+     * @public
+     * @param       str     $login
+     * @param       str     $key
+     * @param       str     $sessid|null
+     * @return      Pluie\Auth\Token
+     */
+    public function generateToken($login, $key, $sessid=null)
+    {
+        $date       = Tool::now();
+        $sessid     = is_null($sessid) ? $this->sign($date, $login, $key) : $sessid;
+        $dt         = Tool::formatDate($date, Tool::TIMESTAMP_SQLDATETIME, self::DATE_FORMAT);
+        $tokenValue = $dt . $this->obfuscate($sessid, $date) . $sessid;
+        $noise      = $this->generateNoise($tokenValue);
+        return new Token($this->config['type'], $key, $date, $tokenValue, $noise);
+    }
+
+    /*!
+     * @method      generateHeader
+     * @public
+     * @param       str     $login
+     * @param       str     $key
+     * @param       str     $sessid
+     * @return      []
+     */
+    public function generateHeader($login, $key, $sessid=null)
+    {
+        $token = $this->generateToken($login, $key, $sessid);
+        return array(
+            $this->config['header']['auth'] .': ' . $token->getType() . ' ' . $token->getValue() . $token->getNoise(),
+            $this->config['header']['ident'].': ' . $token->getIdent()
+        );
+    }
+
+    /*!
+     * get token from specified $header or request headers.
+     * 
+     * @method      getToken
+     * @public
+     * @param       [assoc]     $headers
+     * @throw       Pluie\Auth\AuthenticateException
+     * @return      Pluie\Auth\Token
+     */
+    public function getToken($headers = null)
+    {
+        $token = null;
+        try {
+            if (is_null($headers)) {
+                $headers = apache_request_headers();
+            }
+            $tokenValue = $headers[$this->config['header']['auth']]  ?: '';
+            $ident      = $headers[$this->config['header']['ident']] ?: '';
+            if (preg_match('/(?P<type>[a-z\d]+) (?P<date>\d{'.self::DATE_LENGTH.'})(?P<id>[a-z\d]+)/i', $tokenValue, $rs)) {
+                $date       = Tool::formatDate($rs['date'], self::DATE_FORMAT, Tool::TIMESTAMP_SQLDATETIME);
+                $tokenValue = substr($rs['id'], 0, -$this->config['hash']['noise.length']);
+                $noise      = substr($rs['id'], -$this->config['hash']['noise.length']);
+                $token      = new Token($rs['type'], $ident, $date, $tokenValue, $noise);
+            }
+        }
+        catch(\Exception $e) {
+            throw new AuthenticateException("invalid authentication protocol : ".$e->getMessage());
+        }
+        return $token;
+    }
+
+    /*!
+     * read header generate by generateHeader
+     *
+     * @method      readHeader
+     * @public
+     * @param       [str]   $arrHeaders
+     * @return      [assoc]
+     */
+    public function readHeader($arrHeaders)
+    {
+        $headers = [];
+        foreach($arrHeaders as $h) {
+            $rs = preg_split('/:/', $h);
+            if (count($rs)==2) {
+                $headers[$rs[0]] = trim($rs[1]);
+            }
+        }
+        return $headers;
+    }
+}
