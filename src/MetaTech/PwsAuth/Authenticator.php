@@ -52,9 +52,9 @@ class Authenticator
      * @param       Pluie\Auth\Token     $token
      * @return      bool
      */
-    public function isValid(Token $token)
+    public function isValid(Token $token = null)
     {
-        return $token->getType() == $this->config['type'] && $this->checkObfuscatePart($token);
+        return !is_null($token) && $token->getType() == $this->config['type'] && $this->checkObfuscatePart($token);
     }
 
     /*!
@@ -153,9 +153,9 @@ class Authenticator
      * @param       str                  $login
      * @return      bool
      */
-    public function check(Token $token, $login)
+    public function check(Token $token = null, $login = '')
     {
-        return !is_null($token) && $this->deobfuscate($token->getValue()) == $this->sign($token->getDate(), $login, $token->getIdent());
+        return !is_null($token) && !empty($login) && $this->deobfuscate($token->getValue()) == $this->sign($token->getDate(), $login, $token->getIdent());
     }
 
     /*!
@@ -220,13 +220,18 @@ class Authenticator
             if (is_null($headers)) {
                 $headers = apache_request_headers();
             }
-            $tokenValue = $headers[$this->config['header']['auth']]  ?: '';
-            $ident      = $headers[$this->config['header']['ident']] ?: '';
-            if (preg_match('/(?P<type>[a-z\d]+) (?P<date>\d{'.self::DATE_LENGTH.'})(?P<id>[a-z\d]+)/i', $tokenValue, $rs)) {
-                $date       = Tool::formatDate($rs['date'], self::DATE_FORMAT, Tool::TIMESTAMP_SQLDATETIME);
-                $tokenValue = substr($rs['id'], 0, -$this->config['hash']['noise.length']);
-                $noise      = substr($rs['id'], -$this->config['hash']['noise.length']);
-                $token      = new Token($rs['type'], $ident, $date, $tokenValue, $noise);
+            if (isset($headers[$this->config['header']['auth']]) && isset($headers[$this->config['header']['ident']])) {
+                $tokenValue = $headers[$this->config['header']['auth']];
+                $ident      = $headers[$this->config['header']['ident']];
+                if (preg_match('/(?P<type>[a-z\d]+) (?P<date>\d{'.self::DATE_LENGTH.'})(?P<id>[a-z\d]+)/i', $tokenValue, $rs)) {
+                    $date       = Tool::formatDate($rs['date'], self::DATE_FORMAT, Tool::TIMESTAMP_SQLDATETIME);
+                    $tokenValue = substr($rs['id'], 0, -$this->config['hash']['noise.length']);
+                    $noise      = substr($rs['id'], -$this->config['hash']['noise.length']);
+                    $token      = new Token($rs['type'], $ident, $date, $tokenValue, $noise);
+                }
+            }
+            else {
+                throw new \Exception('missing required headers');
             }
         }
         catch(\Exception $e) {
