@@ -1,13 +1,22 @@
 {
-    "name": "meta-tech/PwsAuth",
-    "license": "MIT",
-    "type": "library",
-    "autoload": {
-        "psr-4": {
-            "": "src/"
+    "name"          : "meta-tech/pws-auth",
+    "type"          : "library",
+    "homepage"      : "https://github.com/meta-tech/pws-auth",
+    "description"   : "PwsAuth is an authentication protocol throught http header designed to web services",
+    "license"       : "MIT",
+    "authors"       : [
+        {
+            "name"      : "a-Sansara",
+            "homepage"  : "https://github.com/a-sansara/"
+        }
+    ],
+    "keywords"      : ["Authentication", "Protocol", "WebService", "Http", "PwsAuth"],
+    "autoload"      : {
+        "psr-4"         : {
+            ""              : "src/"
         }
     },
-    "require": {
+    "require"       : {
         "symfony/yaml": "^3.2"
     }
 }
