@@ -1,6 +1,6 @@
 <?php
 /*
- * This file is part of the PwsAuth package.
+ * This file is part of the pws-auth package.
  *
  * (c) meta-tech.academy
  *

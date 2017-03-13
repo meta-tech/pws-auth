@@ -1,6 +1,6 @@
 <?php
 /*
- * This file is part of the PwsAuth package.
+ * This file is part of the pws-auth package.
  *
  * (c) meta-tech.academy
  *
@@ -251,10 +251,12 @@ class Authenticator
     public function readHeader($arrHeaders)
     {
         $headers = [];
-        foreach($arrHeaders as $h) {
-            $rs = preg_split('/:/', $h);
-            if (count($rs)==2) {
-                $headers[$rs[0]] = trim($rs[1]);
+        if (is_array($arrHeaders)) {
+            foreach($arrHeaders as $h) {
+                $rs = preg_split('/:/', $h);
+                if (count($rs)==2) {
+                    $headers[$rs[0]] = trim($rs[1]);
+                }
             }
         }
         return $headers;
