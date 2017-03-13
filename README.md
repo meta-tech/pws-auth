@@ -4,14 +4,14 @@ PwsAuth is an authentication protocol throught http header designed to web servi
 
 ## Request Headers
 
-request headers must be define as follow  :
+Request headers must be define as follow  :
 
     Pws-Authorization : $type $token
     Pws-Ident : $userkey
 
-the **$token** can be either a `loginToken` or a `sessionToken`
+The **$token** can be either a `loginToken` or a `sessionToken`
 
-the **$token** is divided in four part
+The **$token** is divided in four part
 
 * a datetime formatted with the `Authenticator::DATE_FORMAT` format
 * an obfuscate part 's token builded by date, common salt & the third token 's part
@@ -20,8 +20,8 @@ the **$token** is divided in four part
   a session token representing the session id
 * noise data to be removed
 
-the complete token is valid only if obfuscate part can be rebuild  
-this simple mecanism ensure that **sessionId** is valid and can be safety load
+The complete token is valid only if obfuscate part can be rebuild.  
+This simple mecanism ensure that **sessionId** is valid and can be safety load
 
 Authenticator 's configuration comes with a `hash.session.index` and `hash.noise.length` values 
 wich can be redefined to move the session token part into the complete token
@@ -35,24 +35,24 @@ wich can be redefined to move the session token part into the complete token
 
 ### ClientSide
 
-a request header can be generated via the `generateHeader($login, $key, $sessid=null)` method
-the third parameter determine wich kind of token will be generated
+A request header can be generated via the `generateHeader($login, $key, $sessid=null)` method.  
+The third parameter determine wich kind of token will be generated
 
 ### ServerSide
 
-the Token can be retriew via the `getToken` method
+The Token can be retriew via the `getToken` method
 
-`loginToken` is validate by the `check(Token $token, $login)` method
-`loginToken` must match a public url with method `POST` and a couple of login/password
-on successfull login, the session id must be transmit to the client.
+`loginToken` is validate by the `check(Token $token = null, $login)` method  
+`loginToken` must match a public url with method `POST` and a couple of login/password  
+On successfull login, the session id must be transmit to the client.
 
 `sessionToken` is valid only if the session can effectively be loaded, and the 
 user key match the given `Pws-Ident` value
 
 ### Configuration
 
-configuration must be the same on server and client sides  
-hash definition is a convenient way to obfuscate your tokens
+Configuration must be the same on server and client sides  
+Hash definition is a convenient way to obfuscate your tokens  
 
 ```yaml
 pwsauth :
@@ -95,5 +95,5 @@ $authenticator = new Authenticator($config['pwsauth']);
 
 ### Notes
 
-a valid `$userkey` alone is useless  
-a valid `$sessionId` alone is useless
+A valid `$userkey` alone is useless  
+A valid `$sessionId` alone is useless
