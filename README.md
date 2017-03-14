@@ -32,11 +32,46 @@ wich can be redefined to move the session token part into the complete token
     |       ||     1     |                    2                    |                         3                         |     4     |
      PwsAuth2 242003031711e1a6104135f04c6c01e6cd5952ecafbb53c928603b0gb64tqo609qse6ovd7lhdvk4fnaqk7cdl26e4d4qh7jb41eu5f1zb5y79m8pgu3
 
+### Requirements
+
+PHP >= 5.4
+
+### Install
+
+The package can be installed using [ Composer ](https://getcomposer.org/). (not yet)
+```
+composer require meta-tech/pws-auth
+```
+
+Or add the package to your `composer.json`.
+
+```
+"require": {
+    "meta-tech/pws-auth" : "1.0"
+}
+```
+
+### Authenticator instanciation
+
+```php
+<?php
+require_once(__dir__ . '/vendor/autoload.php');
+
+use Symfony\Component\Yaml\Yaml;
+use MetaTech\PwsAuth\Authenticator;
+
+$config        = Yaml::parse(file_get_contents(__dir__ . '/config/pwsauth.yml'));
+$authenticator = new Authenticator($config);
+```
+
 
 ### ClientSide
 
 A request header can be generated via the `generateHeader($login, $key, $sessid=null)` method.  
 The third parameter determine wich kind of token will be generated
+
+for a client usage, see [ MetaTech\Ws\Client ](https://github.com/meta-tech/pws-client/blob/master/src/MetaTech/Ws/Client.php)  
+
 
 ### ServerSide
 
@@ -48,6 +83,9 @@ On successfull login, the session id must be transmit to the client.
 
 `sessionToken` is valid only if the session can effectively be loaded, and the 
 user key match the given `Pws-Ident` value
+
+for a server usage, see [ MetaTech\Silex\Ws\Authentication ](https://github.com/meta-tech/silex-core/blob/master/src/MetaTech/Silex/Ws/Authentication.php)
+
 
 ### Configuration
 
@@ -81,20 +119,12 @@ hash    :
     noise.length    : 12
 ```
 
-### Authenticator instanciation
-
-```php
-<?php
-require_once(__dir__ . '/vendor/autoload.php');
-
-use Symfony\Component\Yaml\Yaml;
-use MetaTech\PwsAuth\Authenticator;
-
-$config        = Yaml::parse(file_get_contents(__dir__ . '/config/pwsauth.yml'));
-$authenticator = new Authenticator($config);
-```
-
 ### Notes
 
 A valid `$userkey` alone is useless  
 A valid `$sessionId` alone is useless
+
+
+### License
+
+The project is released under the MIT license, see the LICENSE file.
