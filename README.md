@@ -28,8 +28,8 @@ wich can be redefined to move the session token part into the complete token
 
                                                         << hash.session.index >>                             << hash.noise.length >>
     |-----------------------------------------------------------<<-^->>---------------------------------------------<<-^->>--------|
-    |- type -|-- date ---|------------ obfuscate token ---------<<-^->>-------------- session token ----------------<<-^->> noise -|
-    |        |     1     |                    2                    |                         3                         |     4     |
+    |- type ||-- date ---|------------ obfuscate token ---------<<-^->>-------------- session token ----------------<<-^->> noise -|
+    |       ||     1     |                    2                    |                         3                         |     4     |
      PwsAuth2 242003031711e1a6104135f04c6c01e6cd5952ecafbb53c928603b0gb64tqo609qse6ovd7lhdvk4fnaqk7cdl26e4d4qh7jb41eu5f1zb5y79m8pgu3
 
 
@@ -54,30 +54,31 @@ user key match the given `Pws-Ident` value
 Configuration must be the same on server and client sides  
 Hash definition is a convenient way to obfuscate your tokens  
 
+`config/pwsauth.yml`
+
 ```yaml
-pwsauth :
 
-    type    : PwsAuth2
+type    : PwsAuth2
 
-    header  :
-        auth            : Pws-Authorization
-        ident           : Pws-Ident
+header  :
+    auth            : Pws-Authorization
+    ident           : Pws-Ident
 
-    salt    : 
-        common          : jK5#p9Mh5.Zv}
-        # used for generating user specific salt
-        user.index      : 10
-        user.length     : 12
-    
-    hash    :
-        sep             : /
-        algo            : sha256
-        # effective token length size. out of bound data is simply noise
-        length          : 52
-        # session index (or obfuscate length)
-        session.index   : 58
-        # ending noise data length)
-        noise.length    : 12
+salt    : 
+    common          : jK5#p9Mh5.Zv}
+    # used for generating user specific salt
+    user.index      : 10
+    user.length     : 12
+
+hash    :
+    sep             : /
+    algo            : sha256
+    # effective token length size. out of bound data is simply noise
+    length          : 52
+    # session index (or obfuscate length)
+    session.index   : 58
+    # ending noise data length)
+    noise.length    : 12
 ```
 
 ### Authenticator instanciation
@@ -90,7 +91,7 @@ use Symfony\Component\Yaml\Yaml;
 use MetaTech\PwsAuth\Authenticator;
 
 $config        = Yaml::parse(file_get_contents(__dir__ . '/config/pwsauth.yml'));
-$authenticator = new Authenticator($config['pwsauth']);
+$authenticator = new Authenticator($config);
 ```
 
 ### Notes
