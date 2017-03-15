@@ -85,7 +85,7 @@ On successfull login, the session id must be transmit to the client.
 user key match the given `Pws-Ident` value
 
 for a server usage, see [ MetaTech\Silex\Ws\Authentication ](https://github.com/meta-tech/silex-core/blob/master/src/MetaTech/Silex/Ws/Authentication.php)
-
+and [ meta-tech/pws-server ](https://github.com/meta-tech/pws-server).
 
 ### Configuration
 
