@@ -47,7 +47,7 @@ Or add the package to your `composer.json`.
 
 ```
 "require": {
-    "meta-tech/pws-auth" : "@dev"
+    "meta-tech/pws-auth" : "~2.1"
 }
 ```
 
