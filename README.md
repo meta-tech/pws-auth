@@ -38,7 +38,7 @@ PHP >= 5.4
 
 ### Install
 
-The package can be installed using [ Composer ](https://getcomposer.org/). (not yet)
+The package can be installed using [ Composer ](https://getcomposer.org/).
 ```
 composer require meta-tech/pws-auth
 ```
@@ -47,7 +47,7 @@ Or add the package to your `composer.json`.
 
 ```
 "require": {
-    "meta-tech/pws-auth" : "1.0"
+    "meta-tech/pws-auth" : "@dev"
 }
 ```
 
