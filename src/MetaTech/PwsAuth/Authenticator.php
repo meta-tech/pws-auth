@@ -49,7 +49,7 @@ class Authenticator
      * 
      * @method      isValid
      * @public
-     * @param       Pluie\Auth\Token     $token
+     * @param       MetaTech\PwsAtuh\Token  $token
      * @return      bool
      */
     public function isValid(Token $token = null)
@@ -107,11 +107,33 @@ class Authenticator
     }
 
     /*!
+     * @method      formatDate
+     * @private
+     * @param       str     $date   sqldatetime
+     * @return      str
+     */
+    private function formatDate($date)
+    {
+        return Tool::formatDate($date, Tool::TIMESTAMP_SQLDATETIME, self::DATE_FORMAT);
+    }
+
+    /*!
+     * @method      formatDate
+     * @private
+     * @param       str     $formated   DATE_FORMAT
+     * @return      str
+     */
+    private function unformatDate($formated)
+    {
+        return Tool::formatDate($formated, self::DATE_FORMAT, Tool::TIMESTAMP_SQLDATETIME);
+    }
+
+    /*!
      * check valid noise obfuscation
      * 
      * @method      checkObfuscatePart
      * @public
-     * @param       Pluie\Auth\Token    $token
+     * @param       MetaTech\PwsAtuh\Token  $token
      * @return      bool
      */
     public function checkObfuscatePart(Token $token)
@@ -136,7 +158,7 @@ class Authenticator
     /*!
      * @method      getSessionId
      * @orivate
-     * @param       Pluie\Auth\Token    $token
+     * @param       MetaTech\PwsAtuh\Token  $token
      * @return      str
      */
     public function getSessionId(Token $token)
@@ -149,8 +171,8 @@ class Authenticator
      * 
      * @mehtod      check
      * @public
-     * @param       Pluie\Auth\Token     $token
-     * @param       str                  $login
+     * @param       MetaTech\PwsAtuh\Token  $token
+     * @param       str                     $login
      * @return      bool
      */
     public function check(Token $token = null, $login = '')
@@ -175,14 +197,14 @@ class Authenticator
      * @param       str     $login
      * @param       str     $key
      * @param       str     $sessid|null
-     * @return      Pluie\Auth\Token
+     * @return      MetaTech\PwsAuth\Token
      */
     public function generateToken($login, $key, $sessid=null)
     {
         $date       = Tool::now();
         $sessid     = is_null($sessid) ? $this->sign($date, $login, $key) : $sessid;
-        $dt         = Tool::formatDate($date, Tool::TIMESTAMP_SQLDATETIME, self::DATE_FORMAT);
-        $tokenValue = $dt . $this->obfuscate($sessid, $date) . $sessid;
+        $dt         = $this->formatDate($date);
+        $tokenValue = $this->obfuscate($sessid, $date) . $sessid;
         $noise      = $this->generateNoise($tokenValue);
         return new Token($this->config['type'], $key, $date, $tokenValue, $noise);
     }
@@ -198,10 +220,47 @@ class Authenticator
     public function generateHeader($login, $key, $sessid=null)
     {
         $token = $this->generateToken($login, $key, $sessid);
+        $ndate = $this->formatDate($token->getDate());
         return array(
-            $this->config['header']['auth'] .': ' . $token->getType() . ' ' . $token->getValue() . $token->getNoise(),
+            $this->config['header']['auth'] .': ' . $token->getType() . ' ' . $ndate . $token->getValue() . $token->getNoise(),
             $this->config['header']['ident'].': ' . $token->getIdent()
         );
+    }
+
+    /*!
+     * @method      generatePostVars
+     * @public
+     * @param       str     $login
+     * @param       str     $key
+     * @param       str     $tokenName
+     * @param       str     $keyName
+     * @return      []
+     */
+    public function generatePostVars($login, $key, $tokenName='apitkn', $keyName='apikey')
+    {
+        $token = $this->generateToken($login, $key, null);
+        $ndate = $this->formatDate($token->getDate());
+        return array(
+            $tokenName => $ndate . $token->getValue() . $token->getNoise(),
+            $keyName   => $key
+        );
+    }
+
+    /*!
+     * get token from specified $noisedToken for specified key.
+     * 
+     * @method      getTokenFromString
+     * @public
+     * @param       str     $noisedToken
+     * @param       str     $key
+     * @return      MetaTech\PwsAuth\Token
+     */
+    public function getTokenFromString($noisedToken, $key)
+    {
+        $date       = substr($noisedToken, 0, self::DATE_LENGTH);
+        $tokenValue = substr($noisedToken, self::DATE_LENGTH, -$this->config['hash']['noise.length']);
+        $noise      = substr($noisedToken, -$this->config['hash']['noise.length']);
+        return new Token($this->config['type'], $key, $this->unformatDate($date), $tokenValue, $noise);
     }
 
     /*!
@@ -210,8 +269,8 @@ class Authenticator
      * @method      getToken
      * @public
      * @param       [assoc]     $headers
-     * @throw       Pluie\Auth\AuthenticateException
-     * @return      Pluie\Auth\Token
+     * @throw       MetaTech\PwsAuth\AuthenticateException
+     * @return      MetaTech\PwsAuth\Token
      */
     public function getToken($headers = null)
     {
@@ -223,11 +282,11 @@ class Authenticator
             if (isset($headers[$this->config['header']['auth']]) && isset($headers[$this->config['header']['ident']])) {
                 $tokenValue = $headers[$this->config['header']['auth']];
                 $ident      = $headers[$this->config['header']['ident']];
-                if (preg_match('/(?P<type>[a-z\d]+) (?P<date>\d{'.self::DATE_LENGTH.'})(?P<id>[a-z\d]+)/i', $tokenValue, $rs)) {
-                    $date       = Tool::formatDate($rs['date'], self::DATE_FORMAT, Tool::TIMESTAMP_SQLDATETIME);
-                    $tokenValue = substr($rs['id'], 0, -$this->config['hash']['noise.length']);
-                    $noise      = substr($rs['id'], -$this->config['hash']['noise.length']);
-                    $token      = new Token($rs['type'], $ident, $date, $tokenValue, $noise);
+                if (preg_match('/(?P<type>[a-z\d]+) (?P<noised>.*)/i', $tokenValue, $rs)) {
+                    $token  = $this->getTokenFromString($rs['noised'], $ident);
+                    if ($token->getType() != $rs['type']) {
+                        throw new \Exception('wrong type');
+                    }
                 }
             }
             else {
