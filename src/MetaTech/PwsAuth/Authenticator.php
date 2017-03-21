@@ -210,6 +210,33 @@ class Authenticator
     }
 
     /*!
+     * @method      generateResponseHeader
+     * @public
+     * @param       MetaTech\PwsAuth\Token  $token
+     * @param       str                     $login
+     * @return      str
+     */
+    public function generateResponseHeader(Token $token, $login)
+    {
+        return hash(
+            self::DEFAULT_ALGO, 
+            $this->formatDate($token->getDate()) . $this->getUserSalt($login) . $token->getValue()
+        );
+    }
+
+    /*!
+     * @method      checkResponseHeader
+     * @public
+     * @param       MetaTech\PwsAuth\Token  $token
+     * @param       str                     $login
+     * @return      []
+     */
+    public function checkResponseHeader(Token $token, $login, $responseToken)
+    {
+        return $this->generateResponseHeader($token, $login) == $responseToken;
+    }
+
+    /*!
      * @method      generateHeader
      * @public
      * @param       str     $login
