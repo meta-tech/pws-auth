@@ -213,14 +213,13 @@ class Authenticator
      * @method      generateResponseHeader
      * @public
      * @param       MetaTech\PwsAuth\Token  $token
-     * @param       str                     $login
      * @return      str
      */
-    public function generateResponseHeader(Token $token, $login)
+    public function generateResponseHeader(Token $token)
     {
         return hash(
             self::DEFAULT_ALGO, 
-            $this->formatDate($token->getDate()) . $this->getUserSalt($login) . $token->getValue()
+            $this->formatDate($token->getDate()) . $this->getUserSalt('') . $token->getValue()
         );
     }
 
@@ -228,12 +227,11 @@ class Authenticator
      * @method      checkResponseHeader
      * @public
      * @param       MetaTech\PwsAuth\Token  $token
-     * @param       str                     $login
-     * @return      []
+     * @return      bool
      */
-    public function checkResponseHeader(Token $token, $login, $responseToken)
+    public function checkResponseHeader(Token $token, $responseToken)
     {
-        return $this->generateResponseHeader($token, $login) == $responseToken;
+        return $this->generateResponseHeader($token) == $responseToken;
     }
 
     /*!
