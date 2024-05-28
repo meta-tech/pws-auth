@@ -69,7 +69,7 @@ class Tool
      */
     public static function dateFromTime($time=null)
     {
-        return date(self::TIMESTAMP_SQLDATETIME, $time==null ? microtime(true) : $time);
+        return date(self::TIMESTAMP_SQLDATETIME, $time==null ? intval(microtime(true)) : $time);
     }
 
     /*!
